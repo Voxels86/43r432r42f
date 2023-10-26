@@ -1,0 +1,470 @@
+local chrName = game:GetService("Players").LocalPlayer.Character.Name
+local running = false
+
+local ores = game.ReplicatedStorage.Ores:GetChildren()
+local oresTable = {}
+local craftTable = {}
+local playerTable = {}
+
+for i,v in pairs(game.Players:GetChildren()) do
+   if v:IsA("Player") then
+      table.insert(playerTable, v.Name)
+      if v.Name == chrName then 
+       table.remove(playerTable, chrName.Name)
+       end
+   end
+end
+
+for i,v in pairs(ores) do
+	if v:IsA("Part") then
+		table.insert(oresTable, v.Name)
+	end
+end
+
+for i,v in pairs(ores) do
+	if v:IsA("Model") then
+		table.insert(craftTable, v.Name)
+	end
+end
+
+for i,v in pairs(getconnections(game:GetService("Players").LocalPlayer.Idled)) do
+	v:Disable()
+ end
+
+local Players = game:GetService("Players"):GetChildren()
+local RunService = game:GetService("RunService")
+
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "Azure Mines" .. " [beta]",
+    SubTitle = "by Voxels86",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl 
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "Main", Icon = "menu" }),
+    Player = Window:AddTab({ Title = "Player", Icon = "person-standing" }),
+    Misc = Window:AddTab({ Title = "Misc", Icon = "flower-2" }),
+    Tycoon = Window:AddTab({ Title = "Tycoon", Icon = "home" }),
+    Crafting = Window:AddTab({ Title = "Crafting", Icon = "network" }),
+    Server = Window:AddTab({ Title = "Server", Icon = "building-2" }),
+    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+}
+
+local Options = Fluent.Options
+
+    local oreSelect = Tabs.Main:AddDropdown("MultiDropdown", {
+        Title = "Select an ore",
+        Description = "Let's you select Ores.",
+        Values = oresTable,
+        Multi = false,
+        Callback = function(selectedOre)
+            print("Selected ore: " .. selectedOre)
+	        CurrentOreOption = selectedOre
+        end
+    })
+
+    Tabs.Main:AddButton({
+        Title = "Teleport to Ore",
+        Description = "Teleports you to your selected Ore.",
+        Callback = function()
+            local oreFound = false
+            for i,v in pairs(game.Workspace.Mine:GetChildren()) do
+                if v.Name == CurrentOreOption then
+                   game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game.Workspace.Mine[CurrentOreOption].CFrame + Vector3.new(0, 7.5, 0)
+                   oreFound = true
+                end
+            end
+            if oreFound == false then
+                Fluent:Notify({
+                    Title = "No ore found.",
+                    Content = "",
+                    SubContent = "L bozo",
+                    Duration = 1.5
+                    })
+            else
+          end
+        end
+    })
+
+    local Toggle = Tabs.Main:AddToggle("Auto Mine", {Title = "Auto Mine", Default = false })
+
+    Toggle:OnChanged(function(AMO)
+        shared["AMO"] = AMO
+        while shared["AMO"] do
+            task.wait()
+          if not shared["AMO"] then
+            for i,v in pairs(game.Players.LocalPlayer.Character:GetChildren()) do
+                if v:IsA("Tool") and v.Name == "Pickaxe" then
+                    wait(0.5)
+                       v.Activation:FireServer(false)
+                    end
+                  end
+              break
+          end
+		task.wait()
+        for i,v in pairs(game.Players.LocalPlayer.Character:GetChildren()) do
+			if v:IsA("Tool") and v.Name == "Pickaxe" then
+                task.wait(0.1)
+                  if v.IsMining.Value == true and v.Target ~= "nil" then
+                else
+                  v.Activation:FireServer(true)
+                repeat
+                  task.wait()
+                until v.IsMining.Value == false
+                end
+              end
+           end
+        end
+    end)
+
+    local Toggle = Tabs.Main:AddToggle("Auto Deposit", {Title = "Auto Deposit", Default = false })
+
+    Toggle:OnChanged(function(AD)
+        shared["AD"] = AD
+        while shared["AD"] do
+            task.wait()
+          if not shared["AD"] then
+              break
+          end
+		task.wait(1)
+           game:GetService("ReplicatedStorage").MoveAllItems:InvokeServer()
+        end
+    end)
+
+    local Slider = Tabs.Player:AddSlider("Walkspeed", {
+        Title = "Walkspeed",
+        Description = "Changes your player speed.",
+        Default = 16,
+        Min = 16,
+        Max = 200,
+        Rounding = 1,
+        Callback = function(WSP)
+            _G.WalkspeedWSP = WSP
+ 
+            local Plrs = game:GetService("Players")
+        
+            local MyPlr = Plrs.LocalPlayer
+            local MyChar = MyPlr.Character
+        
+            if MyChar then
+                local Hum = MyChar.Humanoid
+                Hum.Changed:connect(function()
+                    Hum.WalkSpeed = _G.WalkspeedWSP
+                end)
+                Hum.WalkSpeed = _G.WalkspeedWSP
+            end
+        
+        
+            MyPlr.CharacterAdded:connect(function(Char)
+                MyChar = Char
+                repeat wait() until Char:FindFirstChild("Humanoid")
+                local Hum = Char.Humanoid
+                Hum.Changed:connect(function()
+                    Hum.WalkSpeed = _G.WalkspeedWSP
+                end)
+                Hum.WalkSpeed = _G.WalkspeedWSP
+            end)
+        end
+    })
+
+    Tabs.Player:AddButton({
+        Title = "Infinite Jump",
+        Description = "Lets you infinitly jump.",
+        Callback = function()
+                 local InfJump = true
+	             game:GetService("UserInputService").jumpRequest:Connect(function()
+		         if InfJump then
+			     game:GetService"Players".LocalPlayer.Character:FindFirstChildOfClass"Humanoid":ChangeState("Jumping")
+		      end
+	       end)
+        end
+    })
+
+    Tabs.Player:AddButton({
+        Title = "Noclip Zoom + More Zoom",
+        Description = "Let's you look through blocks + Gives you more zoom.",
+        Callback = function()
+            game.Players.LocalPlayer.DevCameraOcclusionMode = "Invisicam"
+            game.Players.LocalPlayer.CameraMaxZoomDistance = 500
+        end
+    })
+    
+        Tabs.Player:AddButton({
+        Title = "No Blur + Fullbright",
+        Description = "Removes blur and makes everything bright.",
+        Callback = function()
+        
+        local Light = game:GetService("Lighting")
+ 
+	    function dofullbright()
+	    Light.Ambient = Color3.new(1, 1, 1)
+	    Light.ColorShift_Bottom = Color3.new(1, 1, 1)
+	    Light.ColorShift_Top = Color3.new(1, 1, 1)
+	    end
+	 
+	    dofullbright()
+	 
+	    Light.LightingChanged:Connect(dofullbright)
+        
+        for i,v in pairs(game.Lighting:GetChildren()) do
+              v:Destroy()
+           end
+        end
+    })
+
+    Tabs.Misc:AddButton({
+        Title = "Pumpkinite Checker",
+        Description = "Checks if there are any Pumpkinite Chunks on the map.",
+        Callback = function()
+            local found = false
+            for i,v in pairs(game.Workspace.PumpkiniteChunks:GetChildren()) do
+                if v:IsA("Model") then
+                   Fluent:Notify({
+                        Title = "Pumpkinite Chunk found.",
+                        Content = "Putting a Textlabel on it.",
+                        SubContent = "(Textlabel is like esp)",
+                        Duration = 5
+                        })
+                           local billboardgui = Instance.new("BillboardGui", v)
+                        billboardgui.Name = "EspShow"
+                        billboardgui.StudsOffset = Vector3.new(0,2,0)
+                        billboardgui.Size = UDim2.new(5,0, 2.5,0)
+                        billboardgui.AlwaysOnTop = true
+                        billboardgui.Active = true
+            
+                        local textbox = Instance.new("TextBox", billboardgui)
+                        textbox.Name = "EspBox"
+                        textbox.BackgroundTransparency = 1
+                        textbox.Size = UDim2.new(1,0, 1,0)
+                        textbox.Text = "Pumpkinite"
+                        textbox.TextScaled = true
+                        textbox.TextColor3 = Color3.new(150, 150, 20)
+
+                        found = true 
+               end
+            end
+            if found == false then
+                Fluent:Notify({
+                    Title = "No Pumpkinite Chunk found.",
+                    Content = "",
+                    SubContent = "L bozo",
+                    Duration = 5
+                    })
+            else
+          end
+        end
+    })
+
+    Tabs.Misc:AddButton({
+        Title = "Teleport to Pumpkinite",
+        Description = "Teleports you to Pumpkinite.",
+        Callback = function()
+            for i,v in pairs(game.Workspace.PumpkiniteChunks:GetChildren()) do
+                if v:IsA("Model") then
+                    firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart,game.Workspace.ToolGivers.PumpkinBlaster_Giver ,0)
+                   game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.Hitbox.CFrame
+               end
+            end
+        end
+    })
+
+    Tabs.Misc:AddButton({
+        Title = "Teleport all unanchored",
+        Description = "Teleports all unanchored ores ontop of your head.",
+        Callback = function()
+            for i,v in pairs(game.Workspace.Mine:GetChildren()) do
+                if v:IsA("Part") then
+                if v.Anchored == false then
+                        v.Velocity = Vector3.new(50,50,50)
+                        v.CFrame = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0,25,0)
+              end
+            end
+          end
+        end
+    })
+
+    Tabs.Misc:AddButton({
+        Title = "Grab all Tools",
+        Description = "Grabs all the tools in the server.",
+        Callback = function()
+            for i,v in pairs(game.workspace.ToolGivers:GetDescendants()) do
+                if v:IsA("TouchTransmitter") then
+                 firetouchinterest(game:GetService("Players").LocalPlayer.Character.HumanoidRootPart, v.parent, 0)
+                end
+             end  
+        end
+    })
+
+    Tabs.Misc:AddButton({
+        Title = "Mine All stone on the map.",
+        Description = "Mines all the stone on the map.",
+        Callback = function()
+            local interval = 0.05
+
+            if running == true then
+                Fluent:Notify({
+                    Title = "Script Already Running.",
+                    Content = "",
+                    SubContent = "stop it get help.",
+                    Duration = 5
+                    })
+                else
+                    function mine()
+                        game.Players.LocalPlayer.Character.Pickaxe.Activation:FireServer(true)
+                        wait()
+                        game.Players.LocalPlayer.Character.Pickaxe.Activation:FireServer(true)
+                        wait()
+                        game.Players.LocalPlayer.Character.Pickaxe.Activation:FireServer(true)
+                     end
+                     
+                     print("Running")
+                     running = true
+                      game.Players.LocalPlayer.Character.Pickaxe.SetTarget.Name = "DisabledTarget"
+                     for i,v in pairs(game.workspace.Mine:GetChildren()) do
+                        if v.Name == "Stone" then
+                        task.wait(interval)
+                           game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.CFrame + Vector3.new(0,7.5,0)
+                           game.Players.LocalPlayer.Character.Pickaxe.DisabledTarget:InvokeServer(v)
+                           mine()
+                       end
+                     end
+                     print("Complete")
+                      game.Players.LocalPlayer.Character.Pickaxe.DisabledTarget.Name = "SetTarget"
+                         running = false 
+            end
+        end
+    })
+
+    local Toggle = Tabs.Tycoon:AddToggle("Auto Collect", {Title = "Auto Collect XP+Coins", Default = false })
+
+    Toggle:OnChanged(function(ACCX)
+        shared["ACCX"] = ACCX
+        while shared["ACCX"] do
+            task.wait()
+          if not shared["ACCX"] then
+              break
+          end
+		task.wait(1)
+		for i,v in pairs(game.workspace.Tycoons:GetDescendants()) do
+		     if v:IsA("ObjectValue") and v.Value ~= nil then
+		      local currentTycoon = v.parent
+                firetouchinterest(game:GetService("Players").LocalPlayer.Character.HumanoidRootPart, currentTycoon.Items.Data.Pad, 0)
+                firetouchinterest(game:GetService("Players").LocalPlayer.Character.HumanoidRootPart, currentTycoon.Items.Data.Pad, 1)
+                firetouchinterest(game:GetService("Players").LocalPlayer.Character.HumanoidRootPart, currentTycoon.Items.Mine.Pad, 0)
+                firetouchinterest(game:GetService("Players").LocalPlayer.Character.HumanoidRootPart, currentTycoon.Items.Mine.Pad, 1)
+                end
+             end
+        end
+    end)
+
+    local craftSelect = Tabs.Crafting:AddDropdown("MultiDropdown", {
+        Title = "Select Craftable item",
+        Description = "Select the thing you want to craft.",
+        Values = craftTable,
+        Multi = false,
+        Callback = function(selectedCraftable)
+            print("Selected Craftable: " .. selectedCraftable)
+	        wantedCraftable = selectedCraftable
+        end
+    })
+
+    Tabs.Crafting:AddButton({
+        Title = "Craft item",
+        Description = "Crafts your selected item.",
+        Callback = function()
+           game:GetService("ReplicatedStorage").Craft:InvokeServer(wantedCraftable)
+        end
+    })
+
+    local currentPlayer = nil
+
+    local playerSelect = Tabs.Server:AddDropdown("MultiDropdown", {
+        Title = "Select a player",
+        Description = "Let's you select Players.",
+        Values = playerTable,
+        Multi = false,
+        Callback = function(selectedPlayer)
+            print("Selected player: " .. selectedPlayer)
+	        currentPlayer = selectedPlayer
+        end
+    })
+
+    Tabs.Server:AddButton({
+        Title = "Print Player Stats",
+        Description = "Prints the selected player's stats.",
+        Callback = function()
+            if currentPlayer == nil then
+                Fluent:Notify({
+                    Title = "No Player selected.",
+                    Content = "",
+                    SubContent = "Weirdo",
+                    Duration = 5
+                    })
+               else
+                print("")
+                print(currentPlayer)
+                print("")
+                print("Player Level: " .. game.Players[currentPlayer].Level.Value)
+                print("Player Gold: " .. game.Players[currentPlayer].Gold.Value)
+                print("Player Unobtainium: " .. game.Players[currentPlayer].Crystals.Value)
+                print("Player Emblem: " .. game.Players[currentPlayer].Emblem.Value)
+                print("Player Pickaxe: " .. game.Players[currentPlayer].Pickaxe.Value)
+                print("Player ores mined: " .. game.Players[currentPlayer].OreMined.Value)
+                Fluent:Notify({
+                    Title = "Player Stats printed in f9 console..",
+                    Content = "",
+                    SubContent = "yes.",
+                    Duration = 5
+                    })
+            end
+        end
+    })
+
+
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+
+SaveManager:IgnoreThemeSettings()
+
+
+SaveManager:SetIgnoreIndexes({})
+
+
+InterfaceManager:SetFolder("FluentScriptHub")
+SaveManager:SetFolder("FluentScriptHub/specific-game")
+
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+
+Window:SelectTab(1)
+
+Fluent:Notify({
+    Title = "Azure Mines",
+    Content = "The script has been loaded.",
+    Duration = 5
+})
+
+SaveManager:LoadAutoloadConfig()
+
+
+
+
+
+-- better esp
+-- auto farm 
+-- max depth selector
+
+-- workspace.DescendantRemoving:Connect(function(part)
+--     if part.Name == "String" then
+--        print("Wow this part called String was destroyed!")
+--    end
+-- end)
